@@ -2,6 +2,9 @@
 
 这是一个基于 Vue 3 + Vite + TypeScript 构建的静态教程页面，旨在帮助用户绕过苹果 Mac 电脑的远程管理锁（MDM）。
 
+- **在线访问**: [https://brain9527.github.io/bypassEnterpriseLock/](https://brain9527.github.io/bypassEnterpriseLock/?utm_source=brian)
+- **短链接**: [https://reurl.cc/Q2me0M](https://reurl.cc/Q2me0M)
+
 ## 🚀 项目特点
 
 - **Vue 3 + TS**: 使用最新的前端技术栈构建。
