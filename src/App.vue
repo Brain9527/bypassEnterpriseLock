@@ -72,15 +72,56 @@ select opt in "\${options[@]}"; do
 	esac
 done`;
 
-const copyStatus = ref('复制代码');
+const cleanupCommands = `sudo rm /var/db/ConfigurationProfiles/Settings/.cloudConfigHasActivationRecord
+sudo rm /var/db/ConfigurationProfiles/Settings/.cloudConfigRecordFound
+sudo touch /var/db/ConfigurationProfiles/Settings/.cloudConfigProfileInstalled
+sudo touch /var/db/ConfigurationProfiles/Settings/.cloudConfigRecordNotFound
+sudo launchctl disable system/com.apple.ManagedClient.enroll`;
 
-const handleCopy = () => {
-  navigator.clipboard.writeText(mdmScript).then(() => {
-    copyStatus.value = '已复制！';
-    setTimeout(() => {
-      copyStatus.value = '复制代码';
-    }, 2000);
-  });
+const copyStatus = ref('复制代码');
+const cleanupCopyStatus = ref('复制代码');
+const showToast = ref(false);
+
+const handleCopy = (text: string, type: 'main' | 'cleanup') => {
+  const statusRef = type === 'main' ? copyStatus : cleanupCopyStatus;
+  
+  // 优先使用 modern clipboard API
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => {
+      showSuccess(statusRef);
+    }).catch(() => {
+      fallbackCopy(text, statusRef);
+    });
+  } else {
+    fallbackCopy(text, statusRef);
+  }
+};
+
+const showSuccess = (statusRef: any) => {
+  statusRef.value = '已复制！';
+  showToast.value = true;
+  setTimeout(() => {
+    statusRef.value = '复制代码';
+    showToast.value = false;
+  }, 2000);
+};
+
+const fallbackCopy = (text: string, statusRef: any) => {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.position = "fixed";
+  textArea.style.left = "-999999px";
+  textArea.style.top = "-999999px";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  try {
+    document.execCommand('copy');
+    showSuccess(statusRef);
+  } catch (err) {
+    console.error('Fallback copy failed', err);
+  }
+  document.body.removeChild(textArea);
 };
 
 onMounted(() => {
@@ -139,7 +180,7 @@ onMounted(() => {
           <div class="flex justify-between items-center bg-gray-800 text-gray-300 px-4 py-2 rounded-t-lg">
             <span class="text-xs font-mono uppercase">Shell Script</span>
             <button 
-              @click="handleCopy"
+              @click="handleCopy(mdmScript, 'main')"
               class="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded transition text-white"
             >
               {{ copyStatus }}
@@ -154,11 +195,21 @@ onMounted(() => {
           <p><strong>2. 创建正式账户：</strong>在“系统偏好设置”中添加一个新的管理员账户，登录新账户并删除原来的 Apple 账户。</p>
           <p><strong>3. 关闭 SIP：</strong>在恢复模式终端输入 <code>csrutil disable</code> 并重启。</p>
           <p><strong>4. 彻底屏蔽监管：</strong>在系统终端中依次执行：</p>
-          <pre class="language-bash"><code>sudo rm /var/db/ConfigurationProfiles/Settings/.cloudConfigHasActivationRecord
-sudo rm /var/db/ConfigurationProfiles/Settings/.cloudConfigRecordFound
-sudo touch /var/db/ConfigurationProfiles/Settings/.cloudConfigProfileInstalled
-sudo touch /var/db/ConfigurationProfiles/Settings/.cloudConfigRecordNotFound
-sudo launchctl disable system/com.apple.ManagedClient.enroll</code></pre>
+          
+          <!-- Cleanup Code Block -->
+          <div class="relative mt-4 group">
+            <div class="flex justify-between items-center bg-gray-800 text-gray-300 px-4 py-2 rounded-t-lg">
+              <span class="text-xs font-mono uppercase">Cleanup Commands</span>
+              <button 
+                @click="handleCopy(cleanupCommands, 'cleanup')"
+                class="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded transition text-white"
+              >
+                {{ cleanupCopyStatus }}
+              </button>
+            </div>
+            <pre class="!mt-0 !rounded-t-none"><code class="language-bash">{{ cleanupCommands }}</code></pre>
+          </div>
+
           <p><strong>5. 检查状态：</strong>执行 <code>sudo profiles show -type enrollment</code>，若显示 Error 则代表成功。</p>
         </div>
       </div>
@@ -166,6 +217,18 @@ sudo launchctl disable system/com.apple.ManagedClient.enroll</code></pre>
       <div class="bg-gray-100 p-6 text-center text-gray-500 text-sm">
         <p>本页面仅供学习交流使用，请支持正版软件与合法渠道购买设备。</p>
       </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div 
+      v-show="showToast"
+      class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-gray-900/90 text-white px-6 py-3 rounded-full shadow-2xl flex items-center space-x-2 z-[9999] transition-opacity duration-300"
+      :class="showToast ? 'opacity-100' : 'opacity-0'"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+      </svg>
+      <span class="font-medium">复制成功</span>
     </div>
   </div>
 </template>
