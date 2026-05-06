@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  background-color: #f3f4f6;
+}
+
+body {
+  margin: 0;
+}
+
+/* PrismJS Tomorrow Night Theme Override */
+pre[class*="language-"] {
+  border-radius: 0.5rem;
+  margin: 1.5rem 0;
+}
